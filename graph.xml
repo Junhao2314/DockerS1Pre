@@ -1,0 +1,164 @@
+<graph id="S1_GRD_Preprocessing">
+  <version>1.0</version>
+
+ <!-- 使用教程：
+ gpt graph.xml -Presolution=10 -Porigin=5 -Pfilter='None' -Pdem='SRTM 3Sec' 
+ -Pcrs='epsg:4326' -Pinput=/data/xxx.SAFE 
+ -Poutput=/output/xxx.tif
+ 参考：https://github.com/nasa
+ -->
+
+  <!-- 1. 读取 Sentinel-1 GRD 数据 -->
+  <node id="Read">
+    <operator>Read</operator>
+    <sources/>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <file>${input}</file>
+    </parameters>
+  </node>
+
+  <!-- 2. 轨道校正 -->
+  <node id="ApplyOrbitFile">
+    <operator>Apply-Orbit-File</operator>
+    <sources>
+      <sourceProduct refid="Read"/>
+    </sources>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <orbitType>Sentinel Precise (Auto Download)</orbitType>
+      <polyDegree>3</polyDegree>
+      <continueOnFail>true</continueOnFail>
+    </parameters>
+  </node>
+
+  <!-- 3. 热噪声去除 -->
+  <node id="ThermalNoiseRemoval">
+    <operator>ThermalNoiseRemoval</operator>
+    <sources>
+      <sourceProduct refid="ApplyOrbitFile"/>
+    </sources>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <selectedPolarisations/>
+      <removeThermalNoise>true</removeThermalNoise>
+      <reIntroduceThermalNoise>false</reIntroduceThermalNoise>
+    </parameters>
+  </node>
+
+  <!-- 4. 黑边去除-->
+  <node id="RemoveBorderNoise">
+    <operator>Remove-GRD-Border-Noise</operator>
+    <sources>
+      <sourceProduct refid="ThermalNoiseRemoval"/>
+    </sources>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <selectedPolarisations/>
+      <borderLimit>500</borderLimit>
+      <trimThreshold>50</trimThreshold>
+    </parameters>
+  </node>
+
+  <!-- 5. 辐射定标 -->
+  <node id="Calibration">
+    <operator>Calibration</operator>
+    <sources>
+      <!-- <sourceProduct refid="RemoveBorderNoise"/> -->
+      <sourceProduct refid="ThermalNoiseRemoval"/>
+    </sources>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <sourceBands/>
+      <auxFile>Product Auxiliary File</auxFile>
+      <externalAuxFile/>
+      <outputImageInComplex>false</outputImageInComplex>
+      <outputImageScaleInDb>false</outputImageScaleInDb>
+      <createGammaBand>false</createGammaBand>
+      <createBetaBand>false</createBetaBand>
+      <selectedPolarisations/>
+      <outputSigmaBand>true</outputSigmaBand>
+      <outputGammaBand>false</outputGammaBand>
+      <outputBetaBand>false</outputBetaBand>
+    </parameters>
+  </node>
+
+  <!-- 6. 斑点滤波-->
+  <node id="SpeckleFilter">
+    <operator>Speckle-Filter</operator>
+    <sources>
+      <sourceProduct refid="Calibration"/>
+    </sources>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <sourceBands/>
+      <filter>${filter}</filter>
+      <filterSizeX>3</filterSizeX>
+      <filterSizeY>3</filterSizeY>
+      <dampingFactor>2</dampingFactor>
+      <estimateENL>true</estimateENL>
+      <enl>1.0</enl>
+      <numLooksStr>1</numLooksStr>
+      <windowSize>7x7</windowSize>
+      <targetWindowSizeStr>3x3</targetWindowSizeStr>
+      <sigmaStr>0.9</sigmaStr>
+      <anSize>50</anSize>
+    </parameters>
+  </node>
+
+  <!-- 7. 地形校正 -->
+  <node id="TerrainCorrected">
+    <operator>Terrain-Correction</operator>
+    <sources>
+      <sourceProduct refid="SpeckleFilter"/>
+    </sources>
+    <parameters>
+        <sourceBands/>
+        <demName>${dem}</demName>
+        <externalDEMNoDataValue>0.0</externalDEMNoDataValue>
+        <externalDEMApplyEGM>true</externalDEMApplyEGM>
+        <demResamplingMethod>BILINEAR_INTERPOLATION</demResamplingMethod>
+        <imgResamplingMethod>BILINEAR_INTERPOLATION</imgResamplingMethod>
+        <pixelSpacingInMeter>${resolution}</pixelSpacingInMeter>
+        <mapProjection>${crs}</mapProjection>
+        <alignToStandardGrid>true</alignToStandardGrid>
+        <standardGridOriginX>${origin}</standardGridOriginX>
+        <standardGridOriginY>${origin}</standardGridOriginY>
+        <nodataValueAtSea>false</nodataValueAtSea>
+        <saveDEM>false</saveDEM>
+        <saveLatLon>false</saveLatLon>
+        <saveIncidenceAngleFromEllipsoid>false</saveIncidenceAngleFromEllipsoid>
+        <saveLocalIncidenceAngle>false</saveLocalIncidenceAngle>
+        <saveProjectedLocalIncidenceAngle>false</saveProjectedLocalIncidenceAngle>
+        <saveSelectedSourceBand>true</saveSelectedSourceBand>
+        <outputComplex>false</outputComplex>
+        <applyRadiometricNormalization>false</applyRadiometricNormalization>
+        <saveSigmaNought>false</saveSigmaNought>
+        <saveGammaNought>false</saveGammaNought>
+        <saveBetaNought>false</saveBetaNought>
+        <incidenceAngleForSigma0>Use projected local incidence angle from DEM</incidenceAngleForSigma0>
+        <incidenceAngleForGamma0>Use projected local incidence angle from DEM</incidenceAngleForGamma0>
+        <auxFile>Latest Auxiliary File</auxFile>
+    </parameters>
+  </node>
+
+  <!-- 7. 分贝化（Linear to dB） -->
+  <node id="LinearToFromdB">
+    <operator>LinearToFromdB</operator>
+    <sources>
+	    <!-- <sourceProduct refid="TerrainCorrected"/> -->
+	    <sourceProduct refid="SpeckleFilter"/>
+    </sources>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <sourceBands/>
+    </parameters>
+  </node>
+
+  <!-- 8. 输出为 GeoTIFF -->
+  <node id="Write">
+    <operator>Write</operator>
+    <sources>
+      <sourceProduct refid="LinearToFromdB"/>
+    </sources>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <file>${output}</file>
+      <formatName>GeoTIFF-BigTIFF</formatName>
+      <!-- <formatName>BEAM-DIMAP</formatName> -->
+    </parameters>
+  </node>
+
+</graph>
