@@ -5,7 +5,7 @@
  gpt graph.xml -Presolution=10 -Porigin=5 -Pfilter='None' -Pdem='SRTM 3Sec' 
  -Pcrs='epsg:4326' -Pinput=/data/xxx.SAFE 
  -Poutput=/output/xxx.tif
- 参考：https://github.com/nasa
+ 参考：https://github.com/nasa/delta
  -->
 
   <!-- 1. 读取 Sentinel-1 GRD 数据 -->
