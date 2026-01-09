@@ -475,6 +475,7 @@ Select-String -Path logs\*.log -Pattern "error|exception|failed" -CaseSensitive:
 ---
 
 **注意事项**：
+- 单景数据处理大约需要 24 分钟
 - 处理大量数据时请确保有足够的存储空间
 - 首次运行会下载轨道文件和DEM数据，需要网络连接
 - 建议在处理前备份重要数据

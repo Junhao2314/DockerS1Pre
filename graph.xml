@@ -141,8 +141,8 @@
   <node id="LinearToFromdB">
     <operator>LinearToFromdB</operator>
     <sources>
-	    <!-- <sourceProduct refid="TerrainCorrected"/> -->
-	    <sourceProduct refid="SpeckleFilter"/>
+	    <!-- <sourceProduct refid="SpeckleFilter"/> -->
+	    <sourceProduct refid="TerrainCorrected"/>
     </sources>
     <parameters class="com.bc.ceres.binding.dom.XppDomElement">
       <sourceBands/>

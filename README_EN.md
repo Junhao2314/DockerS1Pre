@@ -475,6 +475,7 @@ Select-String -Path logs\*.log -Pattern "error|exception|failed" -CaseSensitive:
 ---
 
 **Notes**:
+- Processing a single scene takes approximately 24 minutes
 - Ensure sufficient storage space when processing large amounts of data
 - First run will download orbit files and DEM data, requiring network connection
 - Backup important data before processing
