@@ -1,8 +1,10 @@
-[中文](README.md) | [English](README_EN.md)
+**中文** | [English](README_EN.md)
 
 # Sentinel-1 数据预处理工具包
 
 这是一个用于 Sentinel-1 SAR 数据自动化处理的工具包，提供完整的数据预处理流程，包括轨道校正、热噪声去除、辐射校正、地形校正等功能。
+
+**支持 Linux 和 Windows 双平台运行。**
 
 ## 目录
 
@@ -17,18 +19,30 @@
 
 ## 系统要求
 
-- **操作系统**: Linux (Ubuntu 18.04+, CentOS 7+)
+### Linux
+- **操作系统**: Ubuntu 18.04+, CentOS 7+
 - **内存**: 建议 8GB 以上
 - **存储**: 根据数据量确定，建议预留充足空间
 - **网络**: 需要互联网连接下载 SNAP 软件和轨道文件
 
+### Windows
+- **操作系统**: Windows 10/11
+- **内存**: 建议 8GB 以上
+- **存储**: 根据数据量确定，建议预留充足空间
+- **软件**: SNAP 12.0+, GDAL (用于镶嵌功能)
+
 ## 快速开始
 
-### 1. 一键运行（推荐新手）
+### Linux
+
+#### 1. 一键运行（推荐新手）
 
 ```bash
 # 克隆或下载项目
 cd DockerS1Pre
+
+# 添加执行权限
+chmod +x process.sh mosaic.sh
 
 # 直接运行默认监控模式
 ./process.sh
@@ -39,23 +53,56 @@ cd DockerS1Pre
 - 监控 `./data` 目录中的新文件
 - 将处理结果输出到 `./output` 目录
 
-### 2. 自定义参数运行
+#### 2. 自定义参数运行
 
 ```bash
-# 指定输入输出目录和参数
 ./process.sh -i /path/to/s1_data -o /path/to/output -r 40 -d "Copernicus 30m Global DEM"
 ```
 
-### 3. 批处理模式（处理完退出）
+#### 3. 批处理模式（处理完退出）
 
 ```bash
-# 处理现有文件后退出，不监控新文件
 ./process.sh -i ./data -o ./output --batch
 ```
 
+### Windows
+
+#### 方式一：使用 CMD 批处理脚本
+
+```cmd
+:: 使用默认参数运行
+process.bat
+
+:: 自定义参数
+process.bat -i .\data -o .\output -r 40 -d "SRTM 3Sec"
+
+:: 批处理模式
+process.bat -i .\data -o .\output -b
+```
+
+#### 方式二：使用 PowerShell 脚本（推荐）
+
+```powershell
+# 使用默认参数运行
+.\process.ps1
+
+# 自定义参数
+.\process.ps1 -InputDir .\data -OutputDir .\output -Resolution 40 -DEM "SRTM 3Sec"
+
+# 查看帮助
+Get-Help .\process.ps1 -Detailed
+```
+
+> **注意**: 首次运行 PowerShell 脚本可能需要设置执行策略：
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
+
 ## 安装指南
 
-### 方法一：自动安装（推荐）
+### Linux 安装
+
+#### 方法一：自动安装（推荐）
 
 运行处理脚本时会自动检测并安装所需软件：
 
@@ -68,11 +115,11 @@ cd DockerS1Pre
 - GDAL（地理数据处理库）
 - 其他必要依赖
 
-### 方法二：手动安装
+#### 方法二：手动安装
 
-#### 1. 安装 SNAP
+##### 1. 安装 SNAP
 
-详细安装步骤请参考 [SNAP安装.md](SNAP安装.md)
+详细安装步骤请参考 [SNAP 安装指南（中文）](SNAP安装.md)
 
 **快速安装：**
 ```bash
@@ -90,54 +137,132 @@ echo 'export SNAP_HOME=/root/snap' >> ~/.bashrc
 echo 'export PATH=$SNAP_HOME/bin:$PATH' >> ~/.bashrc
 ```
 
-#### 2. 安装 GDAL（用于镶嵌功能）
+##### 2. 安装 GDAL（用于镶嵌功能）
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y gdal-bin python3-gdal
 ```
 
-#### 3. 安装 Docker（可选）
+##### 3. 安装 Docker（可选）
 
-如需容器化部署，请参考 [Docker安装.md](Docker安装.md)
+如需容器化部署，请参考 [Docker 安装指南（中文）](Docker安装.md)
+
+### Windows 安装
+
+#### 1. 安装 SNAP
+
+1. 下载 SNAP 安装包：https://step.esa.int/main/download/snap-download/
+2. 运行安装程序，选择安装路径（如 `C:\Program Files\snap`）
+3. 安装完成后，脚本会自动检测以下常见路径：
+   - `C:\Program Files\snap\bin`
+   - `%USERPROFILE%\AppData\Local\snap\bin`
+   - `%USERPROFILE%\snap\bin`
+
+4. 或手动添加到系统 PATH：
+```cmd
+setx PATH "%PATH%;C:\Program Files\snap\bin"
+```
+
+#### 2. 安装 GDAL（用于镶嵌功能）
+
+**方式一：使用 OSGeo4W（推荐）**
+1. 下载 OSGeo4W：https://trac.osgeo.org/osgeo4w/
+2. 安装时选择 GDAL 组件
+3. 脚本会自动检测 `C:\OSGeo4W64\bin`
+
+**方式二：使用 Conda**
+```cmd
+conda install -c conda-forge gdal
+```
+
+**方式三：使用 QGIS**
+- QGIS 安装包自带 GDAL，脚本会自动检测
 
 ## 使用说明
 
 ### 主要脚本功能
 
-#### 1. process.sh - 主处理脚本
+#### 1. 数据处理脚本
 
-**默认监控模式**（推荐）：
+| 平台 | 脚本文件 | 说明 |
+|------|----------|------|
+| Linux | `process.sh` | Bash 脚本，支持监控模式和批处理模式 |
+| Windows | `process.bat` | CMD 批处理脚本 |
+| Windows | `process.ps1` | PowerShell 脚本（功能更强大，推荐） |
+
+**Linux - process.sh**
+
 ```bash
+# 默认监控模式（持续监控新文件）
 ./process.sh
-```
-- 持续监控输入目录
-- 自动处理新的 Sentinel-1 数据
-- 适合生产环境长期运行
 
-**批处理模式**：
-```bash
+# 批处理模式（处理完退出）
 ./process.sh --batch
-```
-- 处理现有文件后退出
-- 适合一次性数据处理
 
-**自定义参数**：
-```bash
+# 自定义参数
 ./process.sh -i /data/s1 -o /results -r 20 -d "SRTM 3Sec" -c "EPSG:4326"
 ```
 
-#### 2. mosaic.sh - 镶嵌脚本
+**Windows CMD - process.bat**
 
-用于将多个处理后的 GeoTIFF 文件拼接成一个大的镶嵌图：
+```cmd
+:: 默认参数运行
+process.bat
+
+:: 批处理模式
+process.bat -b
+
+:: 自定义参数
+process.bat -i .\data -o .\output -r 20 -d "SRTM 3Sec" -c "EPSG:4326"
+```
+
+**Windows PowerShell - process.ps1**
+
+```powershell
+# 默认参数运行
+.\process.ps1
+
+# 自定义参数
+.\process.ps1 -InputDir .\data -OutputDir .\output -Resolution 20 -DEM "SRTM 3Sec" -CRS "EPSG:4326"
+```
+
+#### 2. 镶嵌脚本
+
+| 平台 | 脚本文件 | 说明 |
+|------|----------|------|
+| Linux | `mosaic.sh` | Bash 镶嵌脚本 |
+| Windows | `mosaic.bat` | CMD 镶嵌脚本 |
+| Windows | `mosaic.ps1` | PowerShell 镶嵌脚本（推荐） |
+
+**Linux - mosaic.sh**
 
 ```bash
 # 编辑脚本中的路径参数
 nano mosaic.sh
 
 # 运行镶嵌
-chmod +x mosaic.sh
 ./mosaic.sh
+```
+
+**Windows CMD - mosaic.bat**
+
+```cmd
+:: 默认参数
+mosaic.bat
+
+:: 自定义参数
+mosaic.bat -i .\output -o .\mosaic\result.tif -r 20
+```
+
+**Windows PowerShell - mosaic.ps1**
+
+```powershell
+# 默认参数
+.\mosaic.ps1
+
+# 自定义参数
+.\mosaic.ps1 -InputDir .\output -OutputFile .\mosaic\result.tif -Resolution 20 -Resampling average
 ```
 
 ### 处理流程说明
@@ -151,12 +276,14 @@ chmod +x mosaic.sh
 5. **辐射校正** - 转换为后向散射系数
 6. **去斑滤波** - 降低相干斑噪声（可选）
 7. **地形校正** - Range-Doppler 地形校正
-8. **投影转换** - 投影到指定坐标系
+8. **分贝化** - 线性值转换为分贝值
 9. **输出保存** - 保存为 GeoTIFF 格式
 
 ## 配置参数
 
 ### 命令行参数
+
+#### Linux (process.sh) / Windows CMD (process.bat)
 
 | 参数 | 说明 | 默认值 | 示例 |
 |------|------|---------|------|
@@ -165,11 +292,24 @@ chmod +x mosaic.sh
 | `-g, --graph` | Graph XML 文件 | `graph.xml` | `-g custom_graph.xml` |
 | `-r, --resolution` | 输出分辨率（米） | `40` | `-r 20` |
 | `-a, --origin` | 网格原点偏移 | `0.0` | `-a 5.0` |
-| `-f, --filter` | 去斑滤波方法 | `Lee` | `-f Refined Lee` |
+| `-f, --filter` | 去斑滤波方法 | `Lee` | `-f "Refined Lee"` |
 | `-d, --dem` | 数字高程模型 | `ACE30` | `-d "SRTM 3Sec"` |
 | `-c, --crs` | 坐标参考系统 | `EPSG:3031` | `-c "EPSG:4326"` |
 | `-b, --batch` | 批处理模式 | 监控模式 | `--batch` |
 | `-h, --help` | 显示帮助信息 | - | `--help` |
+
+#### Windows PowerShell (process.ps1)
+
+| 参数 | 说明 | 默认值 |
+|------|------|---------|
+| `-InputDir` | 输入目录路径 | `.\data` |
+| `-OutputDir` | 输出目录路径 | `.\output` |
+| `-Graph` | Graph XML 文件 | `graph.xml` |
+| `-Resolution` | 输出分辨率（米） | `40` |
+| `-Origin` | 网格原点偏移 | `0.0` |
+| `-Filter` | 去斑滤波方法 | `Lee` |
+| `-DEM` | 数字高程模型 | `ACE30` |
+| `-CRS` | 坐标参考系统 | `EPSG:3031` |
 
 ### DEM 选项
 
@@ -189,39 +329,44 @@ chmod +x mosaic.sh
 
 ## 文件说明
 
-### 核心文件
-
-- **process.sh** - 主处理脚本，支持监控和批处理模式
-- **mosaic.sh** - GeoTIFF镶嵌脚本
-- **graph.xml** - SNAP处理流程定义文件
-
-### 安装指南
-
-- **Docker安装.md** - Docker 容器平台安装指南
-- **SNAP安装.md** - SNAP 软件安装指南
-
-### 配置文件
-
-- **graph.xml** - 定义完整的 Sentinel-1 预处理流程
-
 ### 目录结构
 
 ```
 DockerS1Pre/
-├── process.sh          # 主处理脚本
-├── mosaic.sh           # 镶嵌脚本
-├── graph.xml           # 处理流程配置
+├── process.sh          # Linux 主处理脚本
+├── process.bat         # Windows CMD 处理脚本
+├── process.ps1         # Windows PowerShell 处理脚本
+├── mosaic.sh           # Linux 镶嵌脚本
+├── mosaic.bat          # Windows CMD 镶嵌脚本
+├── mosaic.ps1          # Windows PowerShell 镶嵌脚本
+├── graph.xml           # SNAP 处理流程配置
+├── download.ipynb      # 数据下载 Jupyter Notebook
 ├── data/               # 输入数据目录（默认）
 ├── output/             # 输出结果目录（默认）
 ├── logs/               # 日志文件目录
-├── Docker安装.md       # Docker安装指南
-├── SNAP安装.md         # SNAP安装指南
-└── README.md           # 本用户指南
+├── roi/                # ROI 矢量文件目录
+├── Docker安装.md       # Docker 安装指南
+├── SNAP安装.md         # SNAP 安装指南
+├── README.md           # 中文用户指南
+└── README_EN.md        # 英文用户指南
 ```
+
+### 核心文件说明
+
+| 文件 | 平台 | 说明 |
+|------|------|------|
+| `process.sh` | Linux | 主处理脚本，支持监控和批处理模式 |
+| `process.bat` | Windows | CMD 批处理脚本 |
+| `process.ps1` | Windows | PowerShell 脚本，功能更强大 |
+| `mosaic.sh` | Linux | GeoTIFF 镶嵌脚本 |
+| `mosaic.bat` | Windows | CMD 镶嵌脚本 |
+| `mosaic.ps1` | Windows | PowerShell 镶嵌脚本 |
+| `graph.xml` | 通用 | SNAP 处理流程定义文件 |
+| `download.ipynb` | 通用 | Sentinel-1 数据下载工具 |
 
 ## 故障排除
 
-### 常见问题
+### Linux 常见问题
 
 **1. SNAP 未安装或无法找到 gpt 命令**
 ```bash
@@ -238,44 +383,76 @@ which gpt
 chmod +x process.sh mosaic.sh
 ```
 
-**3. 内存不足**
+**3. 换行符问题（从 Windows 复制的脚本）**
+```bash
+# 转换换行符
+sed -i 's/\r$//' process.sh mosaic.sh
+```
+
+**4. 内存不足**
 ```bash
 # 编辑SNAP配置，增加内存限制
 nano $SNAP_HOME/bin/gpt.vmoptions
 # 添加：-Xmx8g（8GB内存）
 ```
 
-**4. 网络连接问题**
-```bash
-# 检查网络连接
-ping download.esa.int
+### Windows 常见问题
 
-# 使用代理（如需要）
-export http_proxy=http://proxy:port
-export https_proxy=http://proxy:port
+**1. SNAP 未找到**
+```cmd
+:: 检查 gpt 是否可用
+where gpt
+
+:: 如果未找到，手动添加到 PATH
+setx PATH "%PATH%;C:\Program Files\snap\bin"
 ```
 
-**5. 处理失败**
-```bash
-# 查看详细日志
-tail -f logs/$(ls logs/ | tail -1)
+**2. PowerShell 执行策略限制**
+```powershell
+# 设置执行策略
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
 
-# 检查输入数据格式
-ls data/*.zip
+**3. GDAL 未找到**
+```cmd
+:: 检查 GDAL 是否可用
+where gdalbuildvrt
+
+:: 如果使用 OSGeo4W，添加到 PATH
+setx PATH "%PATH%;C:\OSGeo4W64\bin"
+```
+
+**4. 中文路径问题**
+- 建议将项目放在纯英文路径下
+- 或确保系统区域设置支持 UTF-8
+
+**5. 内存不足**
+```
+编辑 SNAP 配置文件：
+C:\Program Files\snap\bin\gpt.vmoptions
+添加：-Xmx8g（8GB内存）
 ```
 
 ### 日志分析
 
-处理日志保存在 `logs/` 目录，文件名格式为 `YYYYMMDD_HH:MM:SS.log`
+处理日志保存在 `logs/` 目录
 
-**查看实时日志**：
+**Linux**：
 ```bash
+# 查看实时日志
 tail -f logs/$(ls logs/ | tail -1)
+
+# 搜索错误信息
+grep -i "error\|exception\|failed" logs/*.log
 ```
 
-**搜索错误信息**：
-```bash
-grep -i "error\|exception\|failed" logs/*.log
+**Windows PowerShell**：
+```powershell
+# 查看最新日志
+Get-Content (Get-ChildItem logs\*.log | Sort-Object LastWriteTime -Descending | Select-Object -First 1) -Tail 50
+
+# 搜索错误信息
+Select-String -Path logs\*.log -Pattern "error|exception|failed" -CaseSensitive:$false
 ```
 
 ## 参考资源
@@ -289,7 +466,6 @@ grep -i "error\|exception\|failed" logs/*.log
 ### 技术支持
 
 - [SNAP 论坛](https://forum.step.esa.int/) - ESA官方技术支持论坛
-- [GitHub Issues](https://github.com/nasa/delta) - 相关开源项目
 
 ### 数据下载
 
@@ -302,4 +478,5 @@ grep -i "error\|exception\|failed" logs/*.log
 - 处理大量数据时请确保有足够的存储空间
 - 首次运行会下载轨道文件和DEM数据，需要网络连接
 - 建议在处理前备份重要数据
+- Linux 脚本使用 Unix 换行符 (LF)，Windows 脚本使用 Windows 换行符 (CRLF)
 - 生产环境建议使用批处理模式定期运行
